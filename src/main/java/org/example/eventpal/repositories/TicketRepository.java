@@ -1,0 +1,17 @@
+package org.example.eventpal.repositories;
+
+import org.example.eventpal.entities.Ticket;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+
+public interface TicketRepository extends JpaRepository<Ticket,Long> {
+    List<Ticket> findByEvent_Id(Long eventId);
+    boolean existsByEvent_IdAndSeat(Long eventId, long seat);
+    long countByTicketType_Id(Long ticketTypeId);
+    List<Ticket> findAllByOrder_Id(Long orderId);
+
+
+}
