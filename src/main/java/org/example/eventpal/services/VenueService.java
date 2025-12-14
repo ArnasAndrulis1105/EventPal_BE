@@ -2,7 +2,6 @@ package org.example.eventpal.services;
 
 import lombok.RequiredArgsConstructor;
 import org.example.eventpal.dto.event.EventResponse;
-import org.example.eventpal.dto.event.SearchEventRequest;
 import org.example.eventpal.dto.venue.CreateVenueRequest;
 import org.example.eventpal.dto.venue.GetAllVenueResponse;
 import org.example.eventpal.dto.venue.VenueSummary;
