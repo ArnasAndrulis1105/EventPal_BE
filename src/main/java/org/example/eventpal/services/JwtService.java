@@ -39,8 +39,10 @@ public class JwtService {
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
+        User u = (User) userDetails;
 
-        Map<String, Object> claims = Map.of("roles", roles, "userId", ((User) userDetails).getId());
+
+        Map<String, Object> claims = Map.of("roles", roles, "userId", ((User) userDetails).getId(), "username",  u.getAppUsername());
         return generateToken(claims, userDetails);
     }
 

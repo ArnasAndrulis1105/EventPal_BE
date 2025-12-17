@@ -5,6 +5,7 @@ import org.example.eventpal.dto.user.UpdateUserProfileRequest;
 import org.example.eventpal.dto.user.UserProfileResponse;
 import org.example.eventpal.services.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,5 +29,19 @@ public class UserController {
     public ResponseEntity<UserProfileResponse> deleteUserProfile(@PathVariable Long id){
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> me(
+            @AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails principal
+    ) {
+        return ResponseEntity.ok(userService.loadUserByEmail(principal.getUsername()));
+    }
+
+    @PutMapping(value = "/me", produces = "application/json")
+    public ResponseEntity<UserProfileResponse> updateMe(
+            @AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails principal,
+            @RequestBody UpdateUserProfileRequest req
+    ) {
+        return ResponseEntity.ok(userService.updateUserByEmail(principal.getUsername(), req));
     }
 }

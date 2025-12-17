@@ -81,8 +81,8 @@ public class AuthenticationService {
         return new RegisterResponse(
                 saved.getId(),
                 request.getName(),
-                request.getSurname(), // returned even if not stored, unless you add it to User
-                saved.getUsername(),
+                request.getSurname(),
+                saved.getAppUsername(),   // ✅ real username field
                 saved.getEmail(),
                 saved.getPhoneNumber(),
                 saved.getRole(),

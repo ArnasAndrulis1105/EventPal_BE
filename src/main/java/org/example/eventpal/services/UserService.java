@@ -84,9 +84,43 @@ public class UserService {
                 build();
     }
 
-    private void validateData(Long id, UpdateUserProfileRequest user){
-        if(user.getId() == null && user.getId().equals(id)){
-            throw new IllegalArgumentException("User ID match not found!");
+    private void validateData(Long id, UpdateUserProfileRequest req) {
+        if (req.getId() != null && !req.getId().equals(id)) {
+            throw new IllegalArgumentException("User ID mismatch!");
         }
     }
+    public UserProfileResponse loadUserByEmail(String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found!"));
+        return toProfile(user);
+    }
+
+    public UserProfileResponse updateUserByEmail(String email, UpdateUserProfileRequest req) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found!"));
+
+        user.setName(req.getName());
+        user.setEmail(req.getEmail());
+        user.setPhoneNumber(req.getPhoneNumber());
+        user.setProfilePicture(req.getProfilePicture());
+        // ⚠️ I'd strongly avoid changing email here unless you re-issue token and check uniqueness.
+
+        return toProfile(userRepository.save(user));
+    }
+
+    private UserProfileResponse toProfile(User user) {
+        return UserProfileResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .profilePicture(user.getProfilePicture())
+                .active(user.getActive())
+                .creationDate(user.getCreationDate())
+                .lastLoginDate(user.getLastLoginDate())
+                .role(user.getRole())
+                .build();
+    }
+
 }
