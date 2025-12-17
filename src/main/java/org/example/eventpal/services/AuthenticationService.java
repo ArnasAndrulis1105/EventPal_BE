@@ -17,6 +17,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -40,31 +43,51 @@ public class AuthenticationService {
         this.authenticationManager = authenticationManager;
     }
 
-    public RegisterResponse register(RegisterRequest registerRequest) {
+    public RegisterResponse register(RegisterRequest request) {
 
-        if (isUniqueUser(registerRequest.getEmail())) {
-            throw new EmailAlreadyExistsException("Email " + registerRequest.getEmail() + " already exists");
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new EmailAlreadyExistsException("Email " + request.getEmail() + " already exists");
         }
 
+        // Default profile picture if not provided
+        String profilePicture = request.getProfilePicture();
+        if (profilePicture == null || profilePicture.isBlank()) {
+            profilePicture = "https://api.dicebear.com/7.x/identicon/png?seed=" +
+                    URLEncoder.encode(request.getEmail(), StandardCharsets.UTF_8);
+        }
 
+        Date now = new Date();
 
+        // IMPORTANT:
+        // Your User entity currently does NOT have "surname".
+        // If you want to persist it, add a `surname` field to User + DB column.
         var user = User.builder()
-                .name(registerRequest.getName())
-                .username(registerRequest.getUsername())
-                .passwordHash(passwordEncoder.encode(registerRequest.getPassword()))
-                .email(registerRequest.getEmail())
-                .phoneNumber(registerRequest.getPhoneNumber())
-                .role(registerRequest.getRole())
+                .name(request.getName())
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .phoneNumber(request.getPhoneNumber())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .profilePicture(profilePicture)
+                .active(true)           // fixes NOT NULL
+                .creationDate(now)      // fixes NOT NULL
+                .lastLoginDate(now)     // fixes NOT NULL (you can update on login later)
+                .role(request.getRole())
                 .build();
-        User savedUser = userRepository.save(user);
+
+
+
+        User saved = userRepository.save(user);
 
         return new RegisterResponse(
-                savedUser.getId(),
-                savedUser.getName(),
-                savedUser.getUsername(),
-                savedUser.getEmail(),
-                savedUser.getPhoneNumber(),
-                savedUser.getRole()
+                saved.getId(),
+                request.getName(),
+                request.getSurname(), // returned even if not stored, unless you add it to User
+                saved.getUsername(),
+                saved.getEmail(),
+                saved.getPhoneNumber(),
+                saved.getRole(),
+                saved.getProfilePicture(),
+                Boolean.TRUE.equals(saved.getActive())
         );
     }
 
@@ -89,7 +112,7 @@ public class AuthenticationService {
     }
 
     private void userCredentialsMatch(LoginRequest loginRequest, User user) {
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
             throw new BadCredentialsException("Incorrect password");
         }
     }

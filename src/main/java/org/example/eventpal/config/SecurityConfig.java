@@ -37,11 +37,11 @@ public class SecurityConfig {
     private final LogoutHandler logoutHandler;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          FilterChainExceptionHandler filterChainExceptionHandler,
-                          AuthenticationProvider authenticationProvider,
-                          LogoutHandler logoutHandler,
-                          CustomAccessDeniedHandler customAccessDeniedHandler,
-                          CustomAuthenticationEntryPoint customAuthenticationEntryPoint) {
+                                 FilterChainExceptionHandler filterChainExceptionHandler,
+                                 AuthenticationProvider authenticationProvider,
+                                 LogoutHandler logoutHandler,
+                                 CustomAccessDeniedHandler customAccessDeniedHandler,
+                                 CustomAuthenticationEntryPoint customAuthenticationEntryPoint) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.filterChainExceptionHandler = filterChainExceptionHandler;
         this.authenticationProvider = authenticationProvider;
@@ -86,5 +86,7 @@ public class SecurityConfig {
             "/api/v1/events/**",
             "/api/v1/venues/**",
             "/api/v1/checkout/**",
+            "/api/v1/ticket-types/**",
+            "/api/v1/tickets/**",
     };
 }

@@ -34,20 +34,20 @@ public class VenueController {
         return ResponseEntity.ok(venueService.getVenueById(id));
     }
     @PostMapping
-    //@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueSummary> createVenue(@Valid @RequestBody CreateVenueRequest request) {
         return ResponseEntity.ok(venueService.createVenue(request));
     }
 
     @PutMapping("/{id}")
-    //@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueSummary> updateVenue(@PathVariable Long id,
                                                       @Valid @RequestBody CreateVenueRequest request) {
         return ResponseEntity.ok(venueService.updateVenue(id, request));
     }
 
     @DeleteMapping("/{id}")
-    //@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteVenue(@PathVariable Long id) {
         venueService.deleteVenue(id);
         return ResponseEntity.noContent().build();

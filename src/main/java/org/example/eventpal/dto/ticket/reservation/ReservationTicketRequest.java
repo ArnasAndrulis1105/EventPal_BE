@@ -15,11 +15,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReservationTicketRequest {
     @NotNull
-    @JsonProperty("event_id")
+    @JsonProperty("eventId")
     private Long eventId;
 
     @NotNull
-    @JsonProperty("ticket_type_id")
+    @JsonProperty("ticketTypeId")
     private Long ticketTypeId;
 
     @Positive
@@ -27,6 +27,6 @@ public class ReservationTicketRequest {
     private int quantity;
 
     @Email
-    @JsonProperty("buyer_email")
+    @JsonProperty("buyerEmail")
     private String buyerEmail;
 }

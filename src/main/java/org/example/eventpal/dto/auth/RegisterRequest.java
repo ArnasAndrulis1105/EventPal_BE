@@ -1,39 +1,43 @@
 package org.example.eventpal.dto.auth;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.example.eventpal.enumerators.Role;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class RegisterRequest {
-    @NotEmpty(message = "Name is required")
+
+    @NotBlank(message = "Name is required")
     private String name;
 
-    @NotEmpty(message = "Surname is required")
+    @NotBlank(message = "Surname is required")
     private String surname;
 
-    @NotEmpty(message = "Username is required")
+    @NotBlank(message = "Username is required")
     private String username;
 
+    @NotBlank
     @Size(min = 8, message = "Password must be at least 8 characters long")
-    @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d).+$",
-            message = "Password must contain at least one uppercase letter, one lowercase letter, and one digit")
+    @Pattern(
+            regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d).+$",
+            message = "Password must contain at least one uppercase letter, one lowercase letter, and one digit"
+    )
     private String password;
 
     @Email(message = "Invalid email address")
-    @NotEmpty(message = "Email is required")
+    @NotBlank(message = "Email is required")
     private String email;
 
-    @NotEmpty(message = "Phone number is required")
+    @NotBlank(message = "Phone number is required")
     private String phoneNumber;
 
     @NotNull(message = "Role is required")
     private Role role;
 
-    @NotNull(message = "User must live on a planet")
-    private Long planetId;
+    // Accepts JSON key: "profile_picture"
+    @JsonProperty("profile_picture")
+    private String profilePicture;
 }

@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.eventpal.enumerators.Role;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -47,13 +49,15 @@ public class User implements UserDetails {
     public String profilePicture;
 
     @Column(nullable = false)
-    public Boolean active;
+    public Boolean active = true;
+
+    @Column(nullable = false, updatable = false)
+    @CreationTimestamp
+    private Date creationDate;
 
     @Column(nullable = false)
-    public Date creationDate;
-
-    @Column(nullable = false)
-    public Date lastLoginDate;
+    @UpdateTimestamp
+    private Date lastLoginDate;
 
     @Enumerated(EnumType.STRING)
     public Role role;
@@ -70,6 +74,6 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return username;
+        return email;
     }
 }

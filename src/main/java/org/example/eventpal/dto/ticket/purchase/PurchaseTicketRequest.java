@@ -13,10 +13,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PurchaseTicketRequest {
     @NotBlank
-    @JsonProperty("reservation_id")
+    @JsonProperty("reservationId")
     private String reservationId;
 
     @NotBlank
-    @JsonProperty("payment_intent_id")
+    @JsonProperty("paymentIntentId")
     private String paymentIntentId;
 }

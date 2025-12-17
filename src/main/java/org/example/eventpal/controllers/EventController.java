@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,6 +20,7 @@ public class EventController {
     private final EventService service;
 
     @PostMapping
+    @PreAuthorize("hasRole('ORGANISER')")
     public ResponseEntity<EventDetailsResponse> create(@Valid @RequestBody CreateEventRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
     }
@@ -37,17 +39,20 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ORGANISER')")
     public EventDetailsResponse update(@PathVariable Long id, @Valid @RequestBody UpdateEventRequest req) {
         return service.update(id, req);
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ORGANISER')")
     public EventDetailsResponse partialUpdate(@PathVariable Long id, @RequestBody UpdateEventRequest req) {
         return service.update(id, req);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ORGANISER')")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }

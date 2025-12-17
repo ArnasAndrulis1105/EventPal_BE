@@ -14,12 +14,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private static final String BEARER_TOKEN_PREFIX = "Bearer ";
 
@@ -50,6 +54,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         jwt = authHeader.substring(BEARER_TOKEN_PREFIX.length());
         email = jwtService.extractUsername(jwt);
+
+        // ✅ LOG HERE
+
+        log.info("JWT extracted principal: [{}] | {} {}", email, request.getMethod(), request.getRequestURI());
+
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
             var isNotRevoked = tokenRepository.findByToken(jwt)

@@ -53,7 +53,7 @@ public class OrderService {
 
     // ------------------ RESERVE ------------------
 
-    public TicketReservationResponse reserve(ReservationTicketRequest req) {
+    public TicketReservationResponse reserve(ReservationTicketRequest req, String buyerEmail) {
         Event event = eventRepo.findById(req.getEventId())
                 .orElseThrow(() -> notFound("Event", req.getEventId()));
 
@@ -64,7 +64,6 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be > 0");
         }
 
-        // Basic capacity check (best-effort; enforce strictly on purchase with @Version/locks if needed)
         int issuedForType = (int) ticketRepo.countByTicketType_Id(type.getId());
         int remaining = Math.max(0, type.getCapacity() - issuedForType);
         if (req.getQuantity() > remaining) {
@@ -76,7 +75,10 @@ public class OrderService {
                 .price(type.getPrice().setScale(2, RoundingMode.HALF_UP))
                 .build();
 
-        BigDecimal lineTotal = unit.getPrice().multiply(BigDecimal.valueOf(req.getQuantity())).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal lineTotal = unit.getPrice()
+                .multiply(BigDecimal.valueOf(req.getQuantity()))
+                .setScale(2, RoundingMode.HALF_UP);
+
         MoneyDTO total = MoneyDTO.builder().currency(unit.getCurrency()).price(lineTotal).build();
 
         String reservationId = UUID.randomUUID().toString();
@@ -86,10 +88,10 @@ public class OrderService {
                 reservationId, expiresAt,
                 event.getId(), type.getId(), req.getQuantity(),
                 unit.getCurrency(), unit.getPrice(),
-                req.getBuyerEmail()
+                buyerEmail // <- now comes from auth
         ));
 
-        var item = ReservationLineItem.builder()
+    var item = ReservationLineItem.builder()
                 .ticketTypeId(type.getId())
                 .ticketTypeName(type.getName())
                 .quantity(req.getQuantity())
@@ -108,10 +110,14 @@ public class OrderService {
 
     // ------------------ PURCHASE ------------------
 
-    public PurchaseTicketResponse purchase(PurchaseTicketRequest req) {
+    public PurchaseTicketResponse purchase(PurchaseTicketRequest req, String principalEmail) {
         ReservationData data = reservations.get(req.getReservationId());
         if (data == null || data.expiresAt.isBefore(LocalDateTime.now())) {
             throw new ResponseStatusException(HttpStatus.GONE, "Reservation expired or not found");
+        }
+
+        if (!data.buyerEmail.equalsIgnoreCase(principalEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reservation does not belong to you");
         }
 
         // Idempotency: if order exists for this paymentIntent, return it
@@ -142,12 +148,16 @@ public class OrderService {
 
         // Create tickets
         List<Ticket> toSave = new ArrayList<>();
+        Set<Long> seatsPicked = new HashSet<>();
+
         for (int i = 0; i < data.quantity; i++) {
-            long seat = pickSeat(event.getId()); // naive allocator
+            long seat = pickSeat(event.getId(), seatsPicked);
+            seatsPicked.add(seat);
+
             Ticket t = Ticket.builder()
                     .description(type.getName())
                     .seat(seat)
-                    .price(data.unitAmount.floatValue()) // consider changing Ticket.price to BigDecimal
+                    .price(data.unitAmount.floatValue())
                     .dateTime(event.getStartsAt())
                     .ticketStatus(TicketStatus.SOLD)
                     .event(event)
@@ -155,7 +165,9 @@ public class OrderService {
                     .build();
             toSave.add(t);
         }
+
         List<Ticket> saved = ticketRepo.saveAll(toSave);
+
 
         // Create order and attach tickets
         BigDecimal total = data.unitAmount.multiply(BigDecimal.valueOf(data.quantity)).setScale(2, RoundingMode.HALF_UP);
@@ -234,12 +246,62 @@ public class OrderService {
                 .build();
     }
 
-    private long pickSeat(Long eventId) {
-        // naive allocator: find next free seat number
+    private long pickSeat(Long eventId, Set<Long> alreadyPicked) {
         long seat = 1;
-        while (ticketRepo.existsByEvent_IdAndSeat(eventId, seat)) seat++;
+        while (alreadyPicked.contains(seat) || ticketRepo.existsByEvent_IdAndSeat(eventId, seat)) {
+            seat++;
+        }
         return seat;
     }
+
+    public List<TicketResponse> myTickets(String buyerEmail) {
+        return ticketRepo.findAllByOrder_BuyerEmailOrderByDateTimeDesc(buyerEmail)
+                .stream()
+                .map(this::toTicketResponse)
+                .toList();
+    }
+
+    public List<TicketReservationResponse> myReservations(String buyerEmail) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return reservations.values().stream()
+                .filter(r -> r.expiresAt.isAfter(now))
+                .filter(r -> Objects.equals(r.buyerEmail, buyerEmail))
+                .map(r -> {
+                    Event event = eventRepo.findById(r.eventId)
+                            .orElseThrow(() -> notFound("Event", r.eventId));
+                    TicketType type = ticketTypeRepo.findById(r.ticketTypeId)
+                            .orElseThrow(() -> notFound("TicketType", r.ticketTypeId));
+
+                    MoneyDTO unit = MoneyDTO.builder().currency(r.currency).price(r.unitAmount).build();
+
+                    BigDecimal lineTotal = r.unitAmount
+                            .multiply(BigDecimal.valueOf(r.quantity))
+                            .setScale(2, RoundingMode.HALF_UP);
+
+                    MoneyDTO total = MoneyDTO.builder().currency(r.currency).price(lineTotal).build();
+
+                    var item = ReservationLineItem.builder()
+                            .ticketTypeId(type.getId())
+                            .ticketTypeName(type.getName())
+                            .quantity(r.quantity)
+                            .unitPrice(unit)
+                            .lineTotal(total)
+                            .build();
+
+                    return TicketReservationResponse.builder()
+                            .reservationId(r.reservationId)
+                            .expiresAt(r.expiresAt)
+                            .event(IdNameDTO.builder().id(event.getId()).name(event.getName()).build())
+                            .items(List.of(item))
+                            .total(total)
+                            .build();
+                })
+                .toList();
+    }
+
+
+
 
     private static ResponseStatusException notFound(String type, Object id) {
         return new ResponseStatusException(HttpStatus.NOT_FOUND, type + " not found: " + id);
