@@ -58,7 +58,8 @@ public class SecurityConfig {
                         .requestMatchers(permittedEndpoints).permitAll()
                         .anyRequest().authenticated()
                 )
-                .cors(withDefaults())
+                .cors(cors ->{})
+                .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(customAuthenticationEntryPoint)
